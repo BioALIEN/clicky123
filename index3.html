@@ -1,0 +1,122 @@
+<html>
+<head>
+<script language="JavaScript">
+// Method 3 using jQuery
+$.fn.track = function () {
+  var source, url, name, ref, $this;
+  $this = $(this);
+  if (window.location.search.substring(1) != '') {
+    source = window.location.pathname + "?" + window.location.search.substring(1);
+  } else {
+    source = window.location.pathname;
+  }
+  url = jQuery.URLEncode($this.attr('href'));
+  name = $this.attr('name');
+  ref = jQuery.URLEncode(source);
+  $this.live('click', function (click) {
+    click.preventDefault();
+    $.post('clicky3.php', {
+      url: url,
+      name: name,
+      ref: ref
+    }, function () { window.location = $this.attr('href'); });
+  });
+};
+
+
+// Method 4 same as Method 3 but using the Vanilla JS library
+if (document.getElementsByClassName === undefined) { // get elements by class name, adjusted for IE's incompetence
+  document.getElementsByClassName = function(className) {
+    var hasClassName, allElements, results, element;
+
+    hasClassName = new RegExp("(?:^|\\s)" + className + "(?:$|\\s)");
+    allElements = document.getElementsByTagName("*");
+    results = [];
+
+    for (var i = 0; (element = allElements[i]) !== null; i++) {
+      var elementClass = element.className;
+      if (elementClass && elementClass.indexOf(className) != -1 && hasClassName.test(elementClass)) {
+        results.push(element);
+      }
+    }
+
+    return results;
+  };
+}
+
+function addTracker(obj, type, fn) { // adds a tracker to the page, like $('xxx').event
+  if (obj.addEventListener) {
+    obj.addEventListener(type, fn, false);
+  } else if (obj.addEventListener) {
+    obj['e' + type + fn] = fn;
+    obj[type + fn] = function() {
+      obj['e' + type + fn]( window.event );
+    };
+    obj.attachEvent('on' + type, obj[type + fn]);
+  }
+}
+
+function save_click(passed_object) { // this function records a click
+  var now, then, path, encoded, to, from, name, img;
+
+  now = new Date();
+  path = 'clicky4.php';
+  from = (window.decode) ? window.decodeURI(document.URL) : document.URL;
+  to = (window.decodeURI) ? window.decodeURI(passed_object.href) : passed_object.href;
+  name = (passed_object.name && passed_object.name != '') ? passed_object.name : '[No Name]';
+
+  // timestamp the path!
+  path += '?timestamp=' + now.getTime();
+
+  path += '&to=' + escape(to) + '&from=' + escape(from) + '&name=' + name; // compile the path with the recorded information
+  img = new Image();
+  img.src = path; // when we call the image, we poll the php page; genius!
+
+  while (now.getTime() < then) {
+    now = new Date(); // resets the timer for subsequent clicks
+  }
+}
+
+function get_targeted_links(target) { // finds targeted elements and wires them up with an event handler
+  var links, link;
+  if (document.getElementsByClassName) {
+    links = document.getElementsByClassName(target);
+    for (var i = 0; i < links.length; i++) {
+      link = links[i];
+      if (link.href) {
+        addTracker(links[i], 'mousedown', save_click(links[i]));
+      }
+    }
+  }
+}
+
+addTracker(window, 'load', get_targeted_links('trackit'));
+</script>
+</head>
+<body>
+<a id="11" href="#11" class="red with-tracking" onclick="return trackclick(this.href, this.name);">Test 3 link 1</a><br/>
+<a id="12" href="#12" class="blue with-tracking" onclick="return trackclick(this.href, this.name);">Test 3 link 2</a><br/>
+<a id="13" href="#13" class="green with-tracking" onclick="return trackclick(this.href, this.name);">Test 3 link 3</a><br/>
+<a id="14" href="#14" class="orange with-tracking" onclick="return trackclick(this.href, this.name);">Test 3 link 4</a><br/>
+<a id="15" href="#15" class="yellow with-tracking" onclick="return trackclick(this.href, this.name);">Test 3 link 5</a><br/>
+<br/>
+onclick or onmousedown
+<br/>
+Most clicked 24 hours
+<br/>
+Most clicked 7 days
+<br/>
+
+<pre>
+References:
+http://stackoverflow.com/questions/1889190/jquery-click-tracking-with-php
+http://www.digitalbart.com/blog/jquery-and-urlencode/
+http://sebastians-pamphlets.com/how-to-turn-click-tracking-into-miserable-failure/
+http://www.smart-it-consulting.com/article.htm?node=155&page=96
+https://mixpanel.com/blog/2012/10/08/link-tracking-in-mixpanel/
+http://www.prodevtips.com/2008/08/19/tracking-clicks-with-jquery-and-google-analytics/
+https://evan.nu/intelligent-jquery-click-through-tracking/
+http://stackoverflow.com/questions/1629158/why-does-using-target-blank-cause-javascript-to-fail
+</pre>
+</body>
+</html>
